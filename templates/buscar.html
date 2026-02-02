@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Buscar - MangaDex PT{% endblock %}
+
+{% block content %}
+<section class="buscar-section">
+    <div class="container">
+        <h1>Buscar Mangás</h1>
+        
+        <div class="busca-avancada">
+            <input 
+                type="text" 
+                id="busca-input" 
+                placeholder="Digite o título do mangá..." 
+                class="busca-input-grande"
+            >
+            <button id="busca-btn" class="btn btn-primary">Buscar</button>
+        </div>
+        
+        <div id="resultados-busca" class="manga-grid">
+            <div class="loading">Digite algo para buscar...</div>
+        </div>
+        
+        <div class="pagination">
+            <button id="prev-busca" class="btn-pagination">← Anterior</button>
+            <span id="page-busca">Página 1</span>
+            <button id="next-busca" class="btn-pagination">Próximo →</button>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 0;
+    let ultimaBusca = '';
+    const LIMIT = 20;
+    
+    // Função para buscar
+    async function executarBusca() {
+        const query = document.getElementById('busca-input').value.trim();
+        
+        if (!query || query.length < 2) {
+            showNotification('Digite pelo menos 2 caracteres', 'warning');
+            return;
+        }
+        
+        ultimaBusca = query;
+        currentPage = 0;
+        carregarResultados();
+    }
+    
+    // Carregar resultados
+    async function carregarResultados() {
+        if (!ultimaBusca) return;
+        
+        try {
+            const response = await fetch(
+                `/api/mangadex/buscar?q=${encodeURIComponent(ultimaBusca)}&limit=${LIMIT}&offset=${currentPage * LIMIT}`
+            );
+            const data = await response.json();
+            
+            const container = document.getElementById('resultados-busca');
+            container.innerHTML = '';
+            
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(manga => {
+                    const card = criarMangaCard(manga);
+                    container.appendChild(card);
+                });
+            } else {
+                container.innerHTML = '<p class="text-center">Nenhum mangá encontrado</p>';
+            }
+            
+            document.getElementById('page-busca').textContent = `Página ${currentPage + 1}`;
+        } catch (error) {
+            console.error('Erro ao buscar:', error);
+            document.getElementById('resultados-busca').innerHTML = '<p class="text-center">Erro ao buscar</p>';
+        }
+    }
+    
+    // Criar card de mangá
+    function criarMangaCard(manga) {
+        const div = document.createElement('div');
+        div.className = 'manga-card';
+        
+        const coverUrl = obterCapaManga(manga);
+        const titulo = manga.attributes?.title?.en || 
+                       manga.attributes?.title?.['ja-ro'] || 
+                       manga.attributes?.title?.['pt-br'] || 
+                       manga.attributes?.title?.['pt'] || 
+                       Object.values(manga.attributes?.title || {})[0] || 
+                       'Sem título';
+        const status = manga.attributes?.status || 'desconhecido';
+        
+        div.innerHTML = `
+            <a href="/manga/${manga.id}" class="manga-link">
+                <img src="${coverUrl}" alt="${titulo}" class="manga-cover" onerror="this.src='/static/images/placeholder.png'">
+                <div class="manga-info">
+                    <h3 class="manga-title">${titulo}</h3>
+                    <p class="manga-status">${status}</p>
+                </div>
+            </a>
+        `;
+        
+        return div;
+    }
+    
+    // Obter URL da capa
+    function obterCapaManga(manga) {
+        if (manga.relationships) {
+            const coverArt = manga.relationships.find(r => r.type === 'cover_art');
+            if (coverArt) {
+                return `https://uploads.mangadex.org/covers/${manga.id}/${coverArt.attributes.fileName}`;
+            }
+        }
+        return '/static/images/placeholder.png';
+    }
+    
+    // Event listeners
+    document.getElementById('busca-btn').addEventListener('click', executarBusca);
+    
+    document.getElementById('busca-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            executarBusca();
+        }
+    });
+    
+    document.getElementById('prev-busca').addEventListener('click', () => {
+        if (currentPage > 0) {
+            currentPage--;
+            carregarResultados();
+        }
+    });
+    
+    document.getElementById('next-busca').addEventListener('click', () => {
+        currentPage++;
+        carregarResultados();
+    });
+    
+    // Obter query da URL se existir
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('q')) {
+        const query = params.get('q');
+        document.getElementById('busca-input').value = query;
+        executarBusca();
+    }
+</script>
+{% endblock %}

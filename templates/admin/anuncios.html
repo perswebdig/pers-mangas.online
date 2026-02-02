@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Anúncios - MangaDex PT{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <h1>Gerenciar Anúncios</h1>
+        
+        <div class="admin-menu">
+            <a href="/admin" class="admin-link">Dashboard</a>
+            <a href="/admin/anuncios" class="admin-link active">Gerenciar Anúncios</a>
+            <a href="/admin/usuarios" class="admin-link">Usuários</a>
+            <a href="/admin/analytics" class="admin-link">Analytics</a>
+        </div>
+        
+        <div class="admin-anuncios">
+            <!-- Formulário de Novo Anúncio -->
+            <div class="form-container">
+                <h2>Novo Anúncio</h2>
+                
+                <form id="form-anuncio" class="form-anuncio">
+                    <div class="form-group">
+                        <label for="titulo">Título</label>
+                        <input type="text" id="titulo" name="titulo" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="descricao">Descrição</label>
+                        <textarea id="descricao" name="descricao" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="imagem-url">URL da Imagem</label>
+                        <input type="url" id="imagem-url" name="imagem_url" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="clique-url">URL de Clique</label>
+                        <input type="url" id="clique-url" name="clique_url" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="posicao">Posição</label>
+                        <select id="posicao" name="posicao" required>
+                            <option value="header">Topo (Header)</option>
+                            <option value="footer">Rodapé (Footer)</option>
+                            <option value="reader">Leitor</option>
+                            <option value="popunder">Popunder</option>
+                            <option value="social">Social Bar</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="data-inicio">Data de Início</label>
+                            <input type="date" id="data-inicio" name="data_inicio" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="data-fim">Data de Fim</label>
+                            <input type="date" id="data-fim" name="data_fim" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="ativo" name="ativo" checked>
+                            Ativo
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Criar Anúncio</button>
+                </form>
+            </div>
+            
+            <!-- Lista de Anúncios -->
+            <div class="anuncios-lista">
+                <h2>Anúncios Existentes</h2>
+                
+                <table class="anuncios-table">
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Posição</th>
+                            <th>Status</th>
+                            <th>Impressões</th>
+                            <th>Cliques</th>
+                            <th>CTR</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="anuncios-tbody">
+                        <tr>
+                            <td colspan="7" class="text-center">Carregando anúncios...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Carregar anúncios
+    async function carregarAnuncios() {
+        try {
+            // Simulando dados (em produção, vir do servidor)
+            const anuncios = [
+                {
+                    id: 1,
+                    titulo: 'Anúncio 1',
+                    posicao: 'header',
+                    ativo: true,
+                    impressoes: 1234,
+                    cliques: 56
+                },
+                {
+                    id: 2,
+                    titulo: 'Anúncio 2',
+                    posicao: 'footer',
+                    ativo: true,
+                    impressoes: 2345,
+                    cliques: 123
+                }
+            ];
+            
+            const tbody = document.getElementById('anuncios-tbody');
+            tbody.innerHTML = anuncios.map(ad => {
+                const ctr = ((ad.cliques / ad.impressoes) * 100).toFixed(2);
+                return `
+                    <tr>
+                        <td>${ad.titulo}</td>
+                        <td>${ad.posicao}</td>
+                        <td><span class="badge ${ad.ativo ? 'badge-success' : 'badge-danger'}">${ad.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                        <td>${ad.impressoes}</td>
+                        <td>${ad.cliques}</td>
+                        <td>${ctr}%</td>
+                        <td>
+                            <button class="btn btn-small" onclick="editarAnuncio(${ad.id})">Editar</button>
+                            <button class="btn btn-small btn-danger" onclick="deletarAnuncio(${ad.id})">Deletar</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Erro ao carregar anúncios:', error);
+        }
+    }
+    
+    // Enviar formulário
+    document.getElementById('form-anuncio').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const dados = Object.fromEntries(formData);
+        
+        try {
+            await API.criarAnuncio(dados);
+            showNotification('Anúncio criado com sucesso!', 'success');
+            e.target.reset();
+            carregarAnuncios();
+        } catch (error) {
+            showNotification('Erro ao criar anúncio', 'error');
+        }
+    });
+    
+    // Editar anúncio
+    function editarAnuncio(id) {
+        showNotification('Função em desenvolvimento', 'info');
+    }
+    
+    // Deletar anúncio
+    async function deletarAnuncio(id) {
+        if (confirm('Tem certeza que deseja deletar este anúncio?')) {
+            try {
+                await API.deletarAnuncio(id);
+                showNotification('Anúncio deletado com sucesso!', 'success');
+                carregarAnuncios();
+            } catch (error) {
+                showNotification('Erro ao deletar anúncio', 'error');
+            }
+        }
+    }
+    
+    // Carregar ao inicializar
+    document.addEventListener('DOMContentLoaded', carregarAnuncios);
+</script>
+{% endblock %}

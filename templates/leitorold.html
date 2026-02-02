@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Leitor - {{ config.site_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reader-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #000;
+        min-height: 100vh;
+        padding-bottom: 100px;
+    }
+
+    .reader-controls {
+        position: sticky;
+        top: 60px;
+        width: 100%;
+        background-color: rgba(30, 41, 59, 0.9);
+        backdrop-filter: blur(5px);
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        z-index: 50;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .reader-pages {
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .reader-page-img {
+        width: 100%;
+        height: auto;
+        display: block;
+        object-fit: contain;
+        background: #111;
+        min-height: 400px;
+    }
+
+    .reader-nav-bottom {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: var(--surface);
+        padding: 15px;
+        display: flex;
+        justify-content: space-around;
+        border-top: 1px solid var(--border);
+        z-index: 100;
+    }
+
+    .page-info {
+        font-weight: bold;
+        color: var(--text-primary);
+    }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 768px) {
+        .reader-controls {
+            top: 50px;
+            font-size: 0.8rem;
+            padding: 5px;
+        }
+        .btn-small {
+            padding: 5px 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="loading-reader" class="loading-overlay">
+    <div class="loading">Carregando capítulo...</div>
+</div>
+
+<div class="reader-container">
+    <div class="reader-controls">
+        <button id="btn-prev-chapter" class="btn btn-small btn-secondary" disabled>Cap. Anterior</button>
+        <div class="page-info">
+            <span id="chapter-title">Carregando...</span>
+        </div>
+        <button id="btn-next-chapter" class="btn btn-small btn-secondary" disabled>Próximo Cap.</button>
+    </div>
+
+    {% if config.ad_sidebar_script %}
+    <div class="ad-container ad-reader-top">
+        {{ config.ad_sidebar_script | safe }}
+    </div>
+    {% endif %}
+
+    <div id="reader-pages" class="reader-pages">
+        <!-- Imagens serão inseridas aqui -->
+    </div>
+
+    <div class="reader-nav-bottom">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn btn-small">Topo ↑</button>
+        <a href="/manga/" id="back-to-manga" class="btn btn-small btn-primary">Voltar ao Mangá</a>
+        <button id="btn-download" class="btn btn-small btn-secondary">Baixar Cap.</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const chapterId = '{{ chapter_id }}';
+    let currentMangaId = '';
+    let chapterData = null;
+    let pagesData = null;
+
+    async function carregarCapitulo() {
+        try {
+            const response = await fetch(`/api/mangadex/capitulo/${chapterId}`);
+            if (!response.ok) throw new Error('Falha ao carregar dados do capítulo');
+            
+            const data = await response.json();
+            
+            chapterData = data.chapter;
+            pagesData = data.pages;
+            
+            // Encontrar o ID do mangá nos relacionamentos
+            const mangaRel = chapterData.relationships.find(r => r.type === 'manga');
+            currentMangaId = mangaRel ? mangaRel.id : '';
+
+            document.getElementById('chapter-title').textContent = `Cap. ${chapterData.attributes.chapter || '?'}`;
+            if (currentMangaId) {
+                document.getElementById('back-to-manga').href = `/manga/${currentMangaId}`;
+                configurarNavegacao();
+            }
+            
+            renderizarPaginas();
+            document.getElementById('loading-reader').classList.add('hidden');
+        } catch (error) {
+            console.error('Erro ao carregar capítulo:', error);
+            alert('Erro ao carregar capítulo. Verifique sua conexão.');
+            document.getElementById('loading-reader').classList.add('hidden');
+        }
+    }
+
+    function renderizarPaginas() {
+        const container = document.getElementById('reader-pages');
+        container.innerHTML = '';
+
+        if (!pagesData || !pagesData.chapter) return;
+
+        const baseUrl = pagesData.baseUrl;
+        const hash = pagesData.chapter.hash;
+        const files = pagesData.chapter.data;
+
+        files.forEach((file, index) => {
+            const img = document.createElement('img');
+            img.src = `${baseUrl}/data/${hash}/${file}`;
+            img.className = 'reader-page-img';
+            img.loading = 'lazy';
+            img.alt = `Página ${index + 1}`;
+            img.onerror = () => {
+                img.src = 'https://via.placeholder.com/800x1200?text=Erro+ao+carregar+página';
+            };
+            container.appendChild(img);
+        });
+    }
+
+    async function configurarNavegacao() {
+        try {
+            const response = await fetch(`/api/mangadex/manga/${currentMangaId}/capitulos?limit=500`);
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            let capitulos = data.data;
+            
+            // Filtrar apenas capítulos que tenham número (evitar erros de ordenação)
+            capitulos = capitulos.filter(c => c.attributes.chapter !== null);
+            
+            // Ordenar capítulos numericamente (do menor para o maior)
+            capitulos.sort((a, b) => {
+                return parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter);
+            });
+            
+            const currentIndex = capitulos.findIndex(c => c.id === chapterId);
+            
+            const btnPrev = document.getElementById('btn-prev-chapter');
+            const btnNext = document.getElementById('btn-next-chapter');
+
+            // Configurar Anterior
+            if (currentIndex > 0) {
+                const prevId = capitulos[currentIndex - 1].id;
+                btnPrev.disabled = false;
+                btnPrev.style.opacity = '1';
+                btnPrev.onclick = () => window.location.href = `/leitor/${prevId}`;
+            } else {
+                btnPrev.disabled = true;
+                btnPrev.style.opacity = '0.5';
+            }
+
+            // Configurar Próximo
+            if (currentIndex !== -1 && currentIndex < capitulos.length - 1) {
+                const nextId = capitulos[currentIndex + 1].id;
+                btnNext.disabled = false;
+                btnNext.style.opacity = '1';
+                btnNext.onclick = () => window.location.href = `/leitor/${nextId}`;
+            } else {
+                btnNext.disabled = true;
+                btnNext.style.opacity = '0.5';
+            }
+        } catch (error) {
+            console.error('Erro ao configurar navegação:', error);
+        }
+    }
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+        alert('Para baixar: Clique com o botão direito nas imagens e selecione "Salvar como".');
+    });
+
+    carregarCapitulo();
+</script>
+{% endblock %}

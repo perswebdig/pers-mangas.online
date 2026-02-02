@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Categorias - MangaDex PT{% endblock %}
+
+{% block content %}
+<section class="categorias-section">
+    <div class="container">
+        <h1>Categorias e Filtros</h1>
+        
+        <div class="filtros-container">
+            <!-- Filtros -->
+            <aside class="filtros-sidebar">
+                <h3>Filtros</h3>
+                
+                <div class="filtro-grupo">
+                    <h4>Status</h4>
+                    <label><input type="checkbox" name="status" value="ongoing"> Em Andamento</label>
+                    <label><input type="checkbox" name="status" value="completed"> Completo</label>
+                    <label><input type="checkbox" name="status" value="hiatus"> Hiato</label>
+                    <label><input type="checkbox" name="status" value="cancelled"> Cancelado</label>
+                </div>
+                
+                <div class="filtro-grupo">
+                    <h4>Demografia</h4>
+                    <label><input type="checkbox" name="demographic" value="shounen"> Shounen</label>
+                    <label><input type="checkbox" name="demographic" value="shoujo"> Shoujo</label>
+                    <label><input type="checkbox" name="demographic" value="seinen"> Seinen</label>
+                    <label><input type="checkbox" name="demographic" value="josei"> Josei</label>
+                </div>
+                
+                <div class="filtro-grupo">
+                    <h4>Classificação</h4>
+                    <label><input type="checkbox" name="rating" value="safe"> Seguro</label>
+                    <label><input type="checkbox" name="rating" value="suggestive"> Sugestivo</label>
+                    <label><input type="checkbox" name="rating" value="erotica"> Erótico</label>
+                </div>
+                
+                <button id="aplicar-filtros" class="btn btn-primary">Aplicar Filtros</button>
+                <button id="limpar-filtros" class="btn btn-secondary">Limpar</button>
+            </aside>
+            
+            <!-- Resultados -->
+            <main class="filtros-resultados">
+                <div id="categorias-grid" class="manga-grid">
+                    <div class="loading">Carregando categorias...</div>
+                </div>
+                
+                <div class="pagination">
+                    <button id="prev-categorias" class="btn-pagination">← Anterior</button>
+                    <span id="page-categorias">Página 1</span>
+                    <button id="next-categorias" class="btn-pagination">Próximo →</button>
+                </div>
+            </main>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 0;
+    const LIMIT = 20;
+    
+    // Obter filtros selecionados
+    function obterFiltros() {
+        const filtros = {};
+        
+        const status = Array.from(document.querySelectorAll('input[name="status"]:checked'))
+            .map(el => el.value);
+        if (status.length) filtros.status = status.join(',');
+        
+        const demographic = Array.from(document.querySelectorAll('input[name="demographic"]:checked'))
+            .map(el => el.value);
+        if (demographic.length) filtros.demographic = demographic.join(',');
+        
+        return filtros;
+    }
+    
+    // Carregar categorias com filtros
+    async function carregarCategorias() {
+        try {
+            const filtros = obterFiltros();
+            filtros.limit = LIMIT;
+            filtros.offset = currentPage * LIMIT;
+            
+            const response = await fetch(`/api/mangadex/filtrar?${new URLSearchParams(filtros)}`);
+            const data = await response.json();
+            
+            const container = document.getElementById('categorias-grid');
+            container.innerHTML = '';
+            
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(manga => {
+                    const card = criarMangaCard(manga);
+                    container.appendChild(card);
+                });
+            } else {
+                container.innerHTML = '<p class="text-center">Nenhum mangá encontrado com esses filtros</p>';
+            }
+            
+            document.getElementById('page-categorias').textContent = `Página ${currentPage + 1}`;
+        } catch (error) {
+            console.error('Erro ao carregar categorias:', error);
+            document.getElementById('categorias-grid').innerHTML = '<p class="text-center">Erro ao carregar categorias</p>';
+        }
+    }
+    
+    // Criar card de mangá
+    function criarMangaCard(manga) {
+        const div = document.createElement('div');
+        div.className = 'manga-card';
+        
+        const coverUrl = obterCapaManga(manga);
+        const titulo = manga.attributes?.title?.en || 'Sem título';
+        const status = manga.attributes?.status || 'desconhecido';
+        
+        div.innerHTML = `
+            <a href="/manga/${manga.id}" class="manga-link">
+                <img src="${coverUrl}" alt="${titulo}" class="manga-cover" onerror="this.src='/static/images/placeholder.png'">
+                <div class="manga-info">
+                    <h3 class="manga-title">${titulo}</h3>
+                    <p class="manga-status">${status}</p>
+                </div>
+            </a>
+        `;
+        
+        return div;
+    }
+    
+    // Obter URL da capa
+    function obterCapaManga(manga) {
+        if (manga.relationships) {
+            const coverArt = manga.relationships.find(r => r.type === 'cover_art');
+            if (coverArt) {
+                return `https://uploads.mangadex.org/covers/${manga.id}/${coverArt.attributes.fileName}`;
+            }
+        }
+        return '/static/images/placeholder.png';
+    }
+    
+    // Event listeners
+    document.getElementById('aplicar-filtros').addEventListener('click', () => {
+        currentPage = 0;
+        carregarCategorias();
+    });
+    
+    document.getElementById('limpar-filtros').addEventListener('click', () => {
+        document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
+        currentPage = 0;
+        carregarCategorias();
+    });
+    
+    document.getElementById('prev-categorias').addEventListener('click', () => {
+        if (currentPage > 0) {
+            currentPage--;
+            carregarCategorias();
+        }
+    });
+    
+    document.getElementById('next-categorias').addEventListener('click', () => {
+        currentPage++;
+        carregarCategorias();
+    });
+    
+    // Carregar ao inicializar
+    carregarCategorias();
+</script>
+{% endblock %}

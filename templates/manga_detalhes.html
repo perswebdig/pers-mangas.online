@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Detalhes - {{ config.site_name }}{% endblock %}
+{% block extra_css %}
+<style>
+    .manga-header {
+        display: flex;
+        gap: 30px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+    .manga-capa-container {
+        flex: 0 0 250px;
+        max-width: 250px;
+    }
+    .manga-capa-grande {
+        width: 100%;
+        border-radius: 10px;
+        box-shadow: var(--shadow-lg);
+    }
+    .manga-info-detalhes {
+        flex: 1;
+        min-width: 300px;
+    }
+    .capitulo-item {
+        background: var(--surface);
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid var(--border);
+        transition: transform 0.2s;
+    }
+    .capitulo-item:hover {
+        transform: translateX(5px);
+        border-color: var(--primary);
+    }
+    @media (max-width: 600px) {
+        .manga-header { justify-content: center; text-align: center; }
+        .manga-capa-container { flex: 0 0 200px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div id="manga-detalhes-content">
+        <div class="loading">Carregando detalhes...</div>
+    </div>
+
+    <!-- Adsterra Sidebar/Banner Ad -->
+    {% if config.ad_sidebar_script %}
+    <div class="ad-container ad-sidebar">
+        {{ config.ad_sidebar_script | safe }}
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 40px;">
+        <h2>Capítulos</h2>
+        <div id="capitulos-lista" style="margin-top: 20px;">
+            <div class="loading">Carregando capítulos...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const mangaId = '{{ manga_id }}';
+
+async function carregarTudo() {
+    try {
+        // Carregar Detalhes
+        const resManga = await fetch(`/api/mangadex/manga/${mangaId}`);
+        const mangaData = await resManga.json();
+        renderizarDetalhes(mangaData.data);
+
+        // Carregar Capítulos
+        await carregarCapitulos();
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function renderizarDetalhes(manga) {
+    const container = document.getElementById('manga-detalhes-content');
+    const coverRel = manga.relationships.find(r => r.type === 'cover_art');
+    const coverUrl = coverRel ? `https://uploads.mangadex.org/covers/${manga.id}/${coverRel.attributes.fileName}` : '/static/images/placeholder.png';
+    const title = manga.attributes.title.en || manga.attributes.title['pt-br'] || Object.values(manga.attributes.title)[0];
+    const desc = manga.attributes.description.en || manga.attributes.description['pt-br'] || 'Sem descrição.';
+
+    container.innerHTML = `
+        <div class="manga-header">
+            <div class="manga-capa-container">
+                <img src="${coverUrl}" class="manga-capa-grande" alt="${title}">
+            </div>
+            <div class="manga-info-detalhes">
+                <h1>${title}</h1>
+                <p style="margin: 15px 0; color: var(--text-secondary);">${desc.substring(0, 500)}${desc.length > 500 ? '...' : ''}</p>
+                <div class="meta">
+                    <span class="status-badge">${manga.attributes.status}</span>
+                    <span class="status-badge">${manga.attributes.contentRating}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function carregarCapitulos() {
+    const container = document.getElementById('capitulos-lista');
+    try {
+        const res = await fetch(`/api/mangadex/manga/${mangaId}/capitulos`);
+        const data = await res.json();
+        
+        if (!data.data || data.data.length === 0) {
+            container.innerHTML = '<p>Nenhum capítulo encontrado para este idioma.</p>';
+            return;
+        }
+
+        container.innerHTML = data.data.map(ch => `
+            <div class="capitulo-item">
+                <div>
+                    <strong>Capítulo ${ch.attributes.chapter || 'Oneshot'}</strong>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">${ch.attributes.title || ''}</div>
+                </div>
+                <a href="/leitor/${ch.id}" class="btn btn-primary btn-small">Ler</a>
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '<p>Erro ao carregar capítulos.</p>';
+    }
+}
+
+carregarTudo();
+</script>
+{% endblock %}

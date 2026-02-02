@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Cadastro - {{ config.site_name }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 400px; margin-top: 50px; padding: 20px;">
+    <div class="card" style="background: var(--surface); padding: 2rem; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <h2 style="text-align: center; margin-bottom: 1.5rem; color: var(--primary);">Criar Conta</h2>
+        <form id="cadastro-form">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 5px;">Usuário</label>
+                <input type="text" name="username" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 12px; color: white;" placeholder="Escolha um usuário" required>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 5px;">Email</label>
+                <input type="email" name="email" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 12px; color: white;" placeholder="seu@email.com" required>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 5px;">Senha</label>
+                <input type="password" name="password" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 12px; color: white;" placeholder="Crie uma senha" required>
+            </div>
+            <button type="submit" id="cadastro-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: bold;">Cadastrar</button>
+        </form>
+        <p style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem;">
+            Já tem conta? <a href="/login" style="color: var(--secondary); text-decoration: none; font-weight: bold;">Entre aqui</a>
+        </p>
+    </div>
+</div>
+
+<script>
+document.getElementById('cadastro-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('cadastro-btn');
+    const originalText = btn.innerText;
+    
+    try {
+        btn.innerText = 'Cadastrando...';
+        btn.disabled = true;
+        
+        const formData = new FormData(e.target);
+        const res = await fetch(window.location.origin + '/api/auth/cadastro', { 
+            method: 'POST', 
+            body: formData 
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            alert('Cadastro realizado com sucesso! Agora você pode entrar.');
+            window.location.href = '/login';
+        } else {
+            alert(data.detail || 'Erro ao realizar cadastro. Tente outro usuário ou email.');
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    } catch (err) {
+        console.error('Erro no cadastro:', err);
+        alert('Erro ao conectar com o servidor. Tente novamente.');
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
+</script>
+{% endblock %}

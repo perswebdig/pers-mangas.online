@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Login - {{ config.site_name }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 450px; margin: 50px auto; padding: 20px;">
+    <div class="card" style="background: var(--surface); padding: 2.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 16px rgba(0,0,0,0.4);">
+        <h2 style="text-align: center; margin-bottom: 2rem; color: var(--primary); font-size: 2rem;">
+            🔐 Entrar
+        </h2>
+        
+        <div id="error-message" class="hidden" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 12px; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem;">
+        </div>
+        
+        <form id="login-form">
+            <div style="margin-bottom: 1.2rem;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                    Usuário
+                </label>
+                <input 
+                    type="text" 
+                    name="username" 
+                    id="username"
+                    class="search-input" 
+                    style="width: 100%; background: var(--background); border: 2px solid var(--border); border-radius: 8px; padding: 14px; color: white; font-size: 1rem; transition: border 0.3s;" 
+                    placeholder="Digite seu usuário" 
+                    required
+                    autocomplete="username"
+                    onfocus="this.style.borderColor='var(--primary)'"
+                    onblur="this.style.borderColor='var(--border)'">
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">
+                    Senha
+                </label>
+                <input 
+                    type="password" 
+                    name="password" 
+                    id="password"
+                    class="search-input" 
+                    style="width: 100%; background: var(--background); border: 2px solid var(--border); border-radius: 8px; padding: 14px; color: white; font-size: 1rem; transition: border 0.3s;" 
+                    placeholder="Digite sua senha" 
+                    required
+                    autocomplete="current-password"
+                    onfocus="this.style.borderColor='var(--primary)'"
+                    onblur="this.style.borderColor='var(--border)'">
+            </div>
+            
+            <button 
+                type="submit" 
+                id="login-btn" 
+                class="btn btn-primary" 
+                style="width: 100%; padding: 14px; font-weight: bold; font-size: 1.1rem; border-radius: 8px; transition: all 0.3s;">
+                Entrar
+            </button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+            <p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px;">
+                Não tem uma conta?
+            </p>
+            <a 
+                href="/cadastro" 
+                style="color: var(--secondary); text-decoration: none; font-weight: bold; font-size: 1rem; transition: opacity 0.3s;"
+                onmouseover="this.style.opacity='0.8'"
+                onmouseout="this.style.opacity='1'">
+                Cadastre-se aqui →
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const btn = document.getElementById('login-btn');
+    const errorDiv = document.getElementById('error-message');
+    const originalText = btn.innerText;
+    
+    // Limpar mensagem de erro anterior
+    errorDiv.classList.add('hidden');
+    errorDiv.innerText = '';
+    
+    try {
+        // Desabilitar botão e mostrar feedback
+        btn.innerText = '⏳ Entrando...';
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        
+        const formData = new FormData(e.target);
+        
+        const res = await fetch('/api/auth/login', { 
+            method: 'POST', 
+            body: formData,
+            credentials: 'same-origin'
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            // Sucesso - mostrar mensagem e redirecionar
+            btn.innerText = '✓ Sucesso!';
+            btn.style.background = '#10b981';
+            
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 500);
+        } else {
+            // Erro - mostrar mensagem
+            throw new Error(data.detail || 'Erro ao fazer login');
+        }
+    } catch (err) {
+        console.error('Erro no login:', err);
+        
+        // Mostrar mensagem de erro
+        errorDiv.innerText = err.message || 'Erro ao conectar com o servidor. Verifique sua conexão.';
+        errorDiv.classList.remove('hidden');
+        
+        // Restaurar botão
+        btn.innerText = originalText;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        
+        // Focar no campo de usuário
+        document.getElementById('username').focus();
+    }
+});
+
+// Limpar erro ao digitar
+document.getElementById('username').addEventListener('input', () => {
+    document.getElementById('error-message').classList.add('hidden');
+});
+document.getElementById('password').addEventListener('input', () => {
+    document.getElementById('error-message').classList.add('hidden');
+});
+</script>
+{% endblock %}

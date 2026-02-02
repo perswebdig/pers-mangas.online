@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Personalizar Site - Admin{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 800px; margin-top: 30px;">
+    <h1>Personalizar Site</h1>
+    
+    <div class="card" style="background: var(--surface); padding: 2rem; border-radius: 10px; border: 1px solid var(--border); margin-top: 20px;">
+        <form id="config-form">
+            <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Configurações Gerais</h3>
+            <div style="margin-bottom: 1rem;">
+                <label>Nome do Site</label>
+                <input type="text" name="site_name" value="{{ config.site_name }}" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 10px; color: white;" required>
+            </div>
+            <div style="display: flex; gap: 20px; margin-bottom: 1rem;">
+                <div style="flex: 1;">
+                    <label>Cor Primária</label>
+                    <input type="color" name="primary_color" value="{{ config.primary_color }}" style="width: 100%; height: 40px; border: none; background: none; cursor: pointer;">
+                </div>
+                <div style="flex: 1;">
+                    <label>Cor Secundária</label>
+                    <input type="color" name="secondary_color" value="{{ config.secondary_color }}" style="width: 100%; height: 40px; border: none; background: none; cursor: pointer;">
+                </div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label>Texto do Rodapé</label>
+                <input type="text" name="footer_text" value="{{ config.footer_text }}" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 10px; color: white;" required>
+            </div>
+
+            <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-top: 2rem;">Anúncios (Adsterra)</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Cole aqui os códigos/scripts fornecidos pelo Adsterra para cada posição.</p>
+            
+            <div style="margin-bottom: 1rem;">
+                <label>Script do Cabeçalho (Header / Topo)</label>
+                <textarea name="ad_header_script" rows="3" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 10px; color: white; font-family: monospace;">{{ config.ad_header_script }}</textarea>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label>Script da Lateral / Banner (Sidebar)</label>
+                <textarea name="ad_sidebar_script" rows="3" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 10px; color: white; font-family: monospace;">{{ config.ad_sidebar_script }}</textarea>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label>Script do Rodapé (Footer)</label>
+                <textarea name="ad_footer_script" rows="3" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 10px; color: white; font-family: monospace;">{{ config.ad_footer_script }}</textarea>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label>Script Popunder / Social Bar</label>
+                <textarea name="ad_popunder_script" rows="3" class="search-input" style="width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: 5px; padding: 10px; color: white; font-family: monospace;">{{ config.ad_popunder_script }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-weight: bold;">Salvar Todas as Alterações</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('config-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const res = await fetch('/api/admin/config', { method: 'POST', body: formData });
+    if (res.ok) {
+        alert('Configurações salvas com sucesso!');
+        window.location.reload();
+    } else {
+        alert('Erro ao salvar configurações. Verifique os dados e tente novamente.');
+    }
+};
+</script>
+{% endblock %}

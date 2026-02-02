@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ config.site_name }}{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <style>
+        :root {
+            --primary: {{ config.primary_color }};
+            --secondary: {{ config.secondary_color }};
+        }
+        .hidden { display: none !important; }
+        .ad-container { display: flex; justify-content: center; margin: 20px 0; overflow: hidden; }
+    </style>
+    {% block extra_css %}{% endblock %}
+    
+    <!-- Adsterra Popunder/Social Bar -->
+    {% if config.ad_popunder_script %}
+        {{ config.ad_popunder_script | safe }}
+    {% endif %}
+    <script>
+        // Interceptar erros globais de fetch para dar feedback melhor
+        const originalFetch = window.fetch;
+        window.fetch = async (...args) => {
+            try {
+                const response = await originalFetch(...args);
+                return response;
+            } catch (error) {
+                console.error('Fetch error:', error);
+                if (error.message === 'Failed to fetch') {
+                    alert('Erro de conexão: O servidor não respondeu. Verifique se o backend está rodando em http://localhost:8000');
+                }
+                throw error;
+            }
+        };
+    </script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="/">
+                        <span class="logo-icon">📚</span>
+                        <span class="logo-text">{{ config.site_name }}</span>
+                    </a>
+                </div>
+                <nav class="nav-desktop">
+                    <a href="/" class="nav-link">Início</a>
+                    <a href="/categorias" class="nav-link">Categorias</a>
+                    <a href="/adulto" class="nav-link">Adulto</a>
+                    {% if user %}
+                        {% if user.is_admin %}
+                            <a href="/admin/personalizar" class="nav-link" style="color: var(--warning);">Admin</a>
+                        {% endif %}
+                        <span class="nav-link" style="color: var(--text-primary);">Olá, {{ user.username }}</span>
+                        <a href="/logout" class="nav-link">Sair</a>
+                    {% else %}
+                        <a href="/login" class="nav-link">Login</a>
+                        <a href="/cadastro" class="nav-link">Cadastro</a>
+                    {% endif %}
+                </nav>
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Buscar mangá..." class="search-input">
+                    <button class="search-btn" onclick="buscarManga()">🔍</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Adsterra Header Ad -->
+    {% if config.ad_header_script %}
+    <div class="ad-container ad-header">
+        {{ config.ad_header_script | safe }}
+    </div>
+    {% endif %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Adsterra Footer Ad -->
+    {% if config.ad_footer_script %}
+    <div class="ad-container ad-footer">
+        {{ config.ad_footer_script | safe }}
+    </div>
+    {% endif %}
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>{{ config.footer_text }}</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script>
+        function buscarManga() {
+            const q = document.getElementById('search-input').value;
+            if (q) window.location.href = `/buscar?q=${encodeURIComponent(q)}`;
+        }
+        document.getElementById('search-input')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscarManga();
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

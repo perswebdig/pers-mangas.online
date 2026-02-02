@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Dashboard - MangaDex PT{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="container">
+        <h1>Painel de Administração</h1>
+        
+        <div class="admin-menu">
+            <a href="/admin" class="admin-link active">Dashboard</a>
+            <a href="/admin/anuncios" class="admin-link">Gerenciar Anúncios</a>
+            <a href="/admin/usuarios" class="admin-link">Usuários</a>
+            <a href="/admin/analytics" class="admin-link">Analytics</a>
+        </div>
+        
+        <div class="admin-dashboard">
+            <!-- Cards de Estatísticas -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Mangás Cadastrados</h3>
+                    <p class="stat-numero" id="total-mangas">0</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Usuários Ativos</h3>
+                    <p class="stat-numero" id="total-usuarios">0</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Anúncios Ativos</h3>
+                    <p class="stat-numero" id="total-anuncios">0</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Impressões Hoje</h3>
+                    <p class="stat-numero" id="impressoes-hoje">0</p>
+                </div>
+            </div>
+            
+            <!-- Gráficos -->
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Cliques por Dia</h3>
+                    <canvas id="chart-cliques"></canvas>
+                </div>
+                
+                <div class="chart-card">
+                    <h3>Anúncios Mais Clicados</h3>
+                    <div id="top-anuncios" class="top-list">
+                        <p>Carregando...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ações Rápidas -->
+            <div class="acoes-rapidas">
+                <h2>Ações Rápidas</h2>
+                <div class="acoes-grid">
+                    <a href="/admin/anuncios?novo=true" class="acao-card">
+                        <span class="acao-icon">➕</span>
+                        <span class="acao-texto">Novo Anúncio</span>
+                    </a>
+                    
+                    <a href="/admin/usuarios" class="acao-card">
+                        <span class="acao-icon">👥</span>
+                        <span class="acao-texto">Gerenciar Usuários</span>
+                    </a>
+                    
+                    <a href="/admin/analytics" class="acao-card">
+                        <span class="acao-icon">📊</span>
+                        <span class="acao-texto">Ver Analytics</span>
+                    </a>
+                    
+                    <a href="/admin/configuracoes" class="acao-card">
+                        <span class="acao-icon">⚙️</span>
+                        <span class="acao-texto">Configurações</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Carregar estatísticas
+    async function carregarEstatisticas() {
+        try {
+            // Simulando dados (em produção, vir do servidor)
+            document.getElementById('total-mangas').textContent = '1,234';
+            document.getElementById('total-usuarios').textContent = '567';
+            document.getElementById('total-anuncios').textContent = '12';
+            document.getElementById('impressoes-hoje').textContent = '45,678';
+            
+            // Simular top anúncios
+            const topAnuncios = [
+                { titulo: 'Anúncio 1', cliques: 234 },
+                { titulo: 'Anúncio 2', cliques: 189 },
+                { titulo: 'Anúncio 3', cliques: 156 }
+            ];
+            
+            const container = document.getElementById('top-anuncios');
+            container.innerHTML = topAnuncios.map(ad => `
+                <div class="top-item">
+                    <span>${ad.titulo}</span>
+                    <span class="top-numero">${ad.cliques}</span>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Erro ao carregar estatísticas:', error);
+        }
+    }
+    
+    // Carregar ao inicializar
+    document.addEventListener('DOMContentLoaded', carregarEstatisticas);
+</script>
+{% endblock %}

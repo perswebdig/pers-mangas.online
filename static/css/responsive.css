@@ -1,0 +1,236 @@
+/* ============================================================================
+   Responsive Design - Mobile First
+   ============================================================================ */
+
+/* Tablets (768px e acima) */
+@media (min-width: 768px) {
+    .menu-toggle {
+        display: none;
+    }
+    
+    .nav-mobile {
+        display: none;
+    }
+    
+    .search-box {
+        flex: 1;
+        max-width: 300px;
+    }
+    
+    .manga-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+}
+
+/* Desktops (1024px e acima) */
+@media (min-width: 1024px) {
+    .container {
+        padding: 0 var(--spacing-lg);
+    }
+    
+    .manga-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+    
+    .hero h1 {
+        font-size: 3.5rem;
+    }
+    
+    .social-bar {
+        right: var(--spacing-lg);
+    }
+}
+
+/* Telas grandes (1440px e acima) */
+@media (min-width: 1440px) {
+    .container {
+        max-width: 1400px;
+    }
+    
+    .manga-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+}
+
+/* Mobile (até 767px) */
+@media (max-width: 767px) {
+    .menu-toggle {
+        display: block;
+    }
+    
+    .nav-desktop {
+        display: none;
+    }
+    
+    .search-box {
+        flex: 1;
+    }
+    
+    .search-input {
+        font-size: 16px; /* Evita zoom em iOS */
+    }
+    
+    .hero {
+        padding: var(--spacing-xl) var(--spacing-md);
+    }
+    
+    .hero h1 {
+        font-size: var(--font-size-2xl);
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+    
+    .manga-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: var(--spacing-md);
+    }
+    
+    .manga-cover {
+        height: 180px;
+    }
+    
+    .manga-title {
+        font-size: var(--font-size-xs);
+    }
+    
+    .footer-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .social-bar {
+        right: var(--spacing-sm);
+        top: auto;
+        bottom: var(--spacing-sm);
+        transform: none;
+        flex-direction: row;
+        justify-content: center;
+    }
+    
+    .social-bar-item {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .header-content {
+        gap: var(--spacing-md);
+    }
+    
+    .logo-text {
+        display: none;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+    }
+    
+    .btn-pagination {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-xs);
+    }
+}
+
+/* Orientação Landscape em Mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .hero {
+        padding: var(--spacing-lg) var(--spacing-md);
+    }
+    
+    .hero h1 {
+        font-size: var(--font-size-2xl);
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .hero p {
+        font-size: var(--font-size-base);
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .hero-buttons {
+        gap: var(--spacing-sm);
+    }
+}
+
+/* Impressão */
+@media print {
+    .header,
+    .footer,
+    .ad-banner,
+    .social-bar,
+    .pagination,
+    .menu-toggle {
+        display: none;
+    }
+    
+    body {
+        background-color: white;
+        color: black;
+    }
+    
+    a {
+        color: #0066cc;
+    }
+}
+
+/* Preferência de tema escuro */
+@media (prefers-color-scheme: dark) {
+    /* Já está em dark mode por padrão */
+}
+
+/* Preferência de tema claro */
+@media (prefers-color-scheme: light) {
+    :root {
+        --background: #f8fafc;
+        --surface: #f1f5f9;
+        --surface-light: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --border: #cbd5e1;
+    }
+    
+    .header {
+        background-color: rgba(241, 245, 249, 0.95);
+    }
+    
+    .ad-banner {
+        background-color: #f1f5f9;
+    }
+}
+
+/* Redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Contraste alto */
+@media (prefers-contrast: more) {
+    :root {
+        --primary: #0066ff;
+        --secondary: #ff0066;
+        --border: #000;
+    }
+    
+    .manga-card {
+        border-width: 2px;
+    }
+}
+
+/* Suporte a notch (iPhone X+) */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(var(--spacing-md), env(safe-area-inset-left));
+        padding-right: max(var(--spacing-md), env(safe-area-inset-right));
+        padding-top: max(var(--spacing-md), env(safe-area-inset-top));
+        padding-bottom: max(var(--spacing-md), env(safe-area-inset-bottom));
+    }
+}

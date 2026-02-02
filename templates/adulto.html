@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Conteúdo Adulto - MangaDex PT{% endblock %}
+
+{% block content %}
+<section class="adulto-section">
+    <div class="container">
+        <!-- Aviso de Conteúdo Adulto -->
+        <div id="aviso-adulto" class="aviso-adulto">
+            <div class="aviso-conteudo">
+                <h2>⚠️ Aviso de Conteúdo Adulto</h2>
+                <p>Esta seção contém conteúdo explícito e é destinada apenas para maiores de 18 anos.</p>
+                <p>Ao continuar, você confirma que tem 18 anos ou mais e aceita visualizar este conteúdo.</p>
+                
+                <div class="aviso-botoes">
+                    <button class="btn btn-primary" onclick="confirmarMaioridade()">Tenho 18 anos ou mais</button>
+                    <button class="btn btn-secondary" onclick="window.history.back()">Voltar</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conteúdo (oculto até confirmação) -->
+        <div id="conteudo-adulto" class="hidden">
+            <h1>Conteúdo Adulto (Hentai)</h1>
+            
+            <div id="adulto-mangas" class="manga-grid">
+                <div class="loading">Carregando...</div>
+            </div>
+            
+            <div class="pagination">
+                <button id="prev-adulto" class="btn-pagination">← Anterior</button>
+                <span id="page-adulto">Página 1</span>
+                <button id="next-adulto" class="btn-pagination">Próximo →</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 0;
+    const LIMIT = 20;
+    const STORAGE_KEY = 'mangadex_adulto_confirmado';
+    
+    // Verificar se já confirmou maioridade
+    function verificarMaioridade() {
+        const confirmado = obterLocal(STORAGE_KEY, false);
+        if (confirmado) {
+            mostrarConteudo();
+        }
+    }
+    
+    // Confirmar maioridade
+    function confirmarMaioridade() {
+        salvarLocal(STORAGE_KEY, true);
+        mostrarConteudo();
+    }
+    
+    // Mostrar conteúdo
+    function mostrarConteudo() {
+        document.getElementById('aviso-adulto').classList.add('hidden');
+        document.getElementById('conteudo-adulto').classList.remove('hidden');
+        carregarConteudoAdulto();
+    }
+    
+    // Carregar conteúdo adulto
+    async function carregarConteudoAdulto() {
+        try {
+            const response = await fetch(`/api/mangadex/adulto?limit=${LIMIT}&offset=${currentPage * LIMIT}`);
+            const data = await response.json();
+            
+            const container = document.getElementById('adulto-mangas');
+            container.innerHTML = '';
+            
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(manga => {
+                    const card = criarMangaCard(manga);
+                    container.appendChild(card);
+                });
+            } else {
+                container.innerHTML = '<p class="text-center">Nenhum mangá encontrado</p>';
+            }
+            
+            document.getElementById('page-adulto').textContent = `Página ${currentPage + 1}`;
+        } catch (error) {
+            console.error('Erro ao carregar conteúdo adulto:', error);
+            document.getElementById('adulto-mangas').innerHTML = '<p class="text-center">Erro ao carregar</p>';
+        }
+    }
+    
+    // Criar card de mangá
+    function criarMangaCard(manga) {
+        const div = document.createElement('div');
+        div.className = 'manga-card';
+        
+        const coverUrl = obterCapaManga(manga);
+        const titulo = manga.attributes?.title?.en || 
+                       manga.attributes?.title?.['ja-ro'] || 
+                       manga.attributes?.title?.['pt-br'] || 
+                       manga.attributes?.title?.['pt'] || 
+                       Object.values(manga.attributes?.title || {})[0] || 
+                       'Sem título';
+        const status = manga.attributes?.status || 'desconhecido';
+        
+        div.innerHTML = `
+            <a href="/manga/${manga.id}" class="manga-link">
+                <img src="${coverUrl}" alt="${titulo}" class="manga-cover" onerror="this.src='/static/images/placeholder.png'">
+                <div class="manga-info">
+                    <h3 class="manga-title">${titulo}</h3>
+                    <div class="manga-meta-info">
+                        <p class="manga-status">${status}</p>
+                        <div id="capitulos-${manga.id}" class="manga-capitulos-preview">
+                            <span class="loading-small">...</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        `;
+        
+        // Carregar capítulos para este mangá
+        carregarCapitulosPreview(manga.id);
+        
+        return div;
+    }
+    
+    // Obter URL da capa
+    function obterCapaManga(manga) {
+        if (manga.relationships) {
+            const coverArt = manga.relationships.find(r => r.type === 'cover_art');
+            if (coverArt) {
+                return `https://uploads.mangadex.org/covers/${manga.id}/${coverArt.attributes.fileName}`;
+            }
+        }
+        return '/static/images/placeholder.png';
+    }
+    
+    // Event listeners
+    document.getElementById('prev-adulto').addEventListener('click', () => {
+        if (currentPage > 0) {
+            currentPage--;
+            carregarConteudoAdulto();
+        }
+    });
+    
+    document.getElementById('next-adulto').addEventListener('click', () => {
+        currentPage++;
+        carregarConteudoAdulto();
+    });
+    
+    // Carregar preview de capítulos
+    async function carregarCapitulosPreview(mangaId) {
+        try {
+            const response = await fetch(`/api/mangadex/manga/${mangaId}/capitulos?limit=3`);
+            const data = await response.json();
+            const container = document.getElementById(`capitulos-${mangaId}`);
+            
+            if (data.data && data.data.length > 0) {
+                container.innerHTML = data.data.map(cap => 
+                    `<span class="cap-badge">Cap. ${cap.attributes.chapter}</span>`
+                ).join(' ');
+            } else {
+                container.innerHTML = '<span class="no-cap">Sem caps</span>';
+            }
+        } catch (error) {
+            console.error('Erro ao carregar preview:', error);
+        }
+    }
+
+    // Verificar maioridade ao carregar
+    verificarMaioridade();
+</script>
+{% endblock %}

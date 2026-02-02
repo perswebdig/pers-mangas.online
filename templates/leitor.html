@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+
+{% block title %}Leitor - {{ config.site_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reader-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #000;
+        min-height: 100vh;
+        padding-bottom: 100px;
+    }
+
+    .reader-controls {
+        position: sticky;
+        top: 60px;
+        width: 100%;
+        background-color: rgba(30, 41, 59, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        z-index: 50;
+        border-bottom: 2px solid var(--border);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .reader-controls-left,
+    .reader-controls-right {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .reader-controls-center {
+        flex: 1;
+        text-align: center;
+    }
+
+    .reader-pages {
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin-top: 20px;
+    }
+
+    .reader-page-img {
+        width: 100%;
+        height: auto;
+        display: block;
+        object-fit: contain;
+        background: #111;
+        min-height: 400px;
+        border-bottom: 2px solid #222;
+    }
+
+    .reader-nav-bottom {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: rgba(30, 41, 59, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 15px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        border-top: 2px solid var(--border);
+        z-index: 100;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+    }
+
+    .page-info {
+        font-weight: bold;
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+
+    .chapter-number {
+        color: var(--primary);
+        font-size: 1.2rem;
+    }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(255,255,255,0.1);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .hidden { 
+        display: none !important; 
+    }
+
+    .btn-nav {
+        min-width: 120px;
+        padding: 10px 15px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-nav:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background: var(--surface);
+    }
+
+    .btn-nav:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    @media (max-width: 768px) {
+        .reader-controls {
+            top: 50px;
+            font-size: 0.8rem;
+            padding: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .reader-controls-left,
+        .reader-controls-right {
+            gap: 5px;
+        }
+        
+        .btn-nav {
+            min-width: 90px;
+            padding: 8px 10px;
+            font-size: 0.85rem;
+        }
+        
+        .page-info {
+            font-size: 0.9rem;
+        }
+        
+        .chapter-number {
+            font-size: 1rem;
+        }
+
+        .reader-nav-bottom {
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .reader-nav-bottom .btn {
+            flex: 1;
+            min-width: 100px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="loading-reader" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading" style="color: white; font-size: 1.2rem;">Carregando capítulo...</div>
+</div>
+
+<div class="reader-container">
+    <div class="reader-controls">
+        <div class="reader-controls-left">
+            <button id="btn-prev-chapter" class="btn btn-nav btn-secondary" enabled>
+                ← Cap. Anterior
+            </button>
+        </div>
+        <div class="reader-controls-center">
+            <div class="page-info">
+                <span class="chapter-number" id="chapter-title">Carregando...</span>
+            </div>
+        </div>
+        <div class="reader-controls-right">
+            <button id="btn-next-chapter" class="btn btn-nav btn-secondary" enabled>
+                Próximo Cap. →
+            </button>
+        </div>
+    </div>
+
+    {% if config.ad_sidebar_script %}
+    <div class="ad-container ad-reader-top" style="margin: 20px 0;">
+        {{ config.ad_sidebar_script | safe }}
+    </div>
+    {% endif %}
+
+    <div id="reader-pages" class="reader-pages">
+        <!-- Imagens serão inseridas aqui -->
+    </div>
+
+    <div class="reader-nav-bottom">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn btn-small">
+            ↑ Topo
+        </button>
+        <a href="/manga/" id="back-to-manga" class="btn btn-small btn-primary">
+            📖 Voltar ao Mangá
+        </a>
+        <button id="btn-download" class="btn btn-small btn-secondary">
+            💾 Download
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const chapterId = '{{ chapter_id }}';
+    let currentMangaId = '';
+    let chapterData = null;
+    let pagesData = null;
+    let allChapters = [];
+
+    async function carregarCapitulo() {
+        try {
+            const response = await fetch(`/api/mangadex/capitulo/${chapterId}`);
+            if (!response.ok) throw new Error('Falha ao carregar dados do capítulo');
+            
+            const data = await response.json();
+            
+            chapterData = data.chapter;
+            pagesData = data.pages;
+            
+            // Encontrar o ID do mangá nos relacionamentos
+            const mangaRel = chapterData.relationships.find(r => r.type === 'manga');
+            currentMangaId = mangaRel ? mangaRel.id : '';
+
+            // Atualizar título do capítulo
+            const chapterNum = chapterData.attributes.chapter || '?';
+            const chapterTitle = chapterData.attributes.title || '';
+            document.getElementById('chapter-title').textContent = 
+                `Capítulo ${chapterNum}${chapterTitle ? ' - ' + chapterTitle : ''}`;
+            
+            if (currentMangaId) {
+                document.getElementById('back-to-manga').href = `/manga/${currentMangaId}`;
+                await configurarNavegacao();
+            }
+            
+            renderizarPaginas();
+            document.getElementById('loading-reader').classList.add('hidden');
+        } catch (error) {
+            console.error('Erro ao carregar capítulo:', error);
+            alert('Erro ao carregar capítulo. Verifique sua conexão e tente novamente.');
+            document.getElementById('loading-reader').classList.add('hidden');
+        }
+    }
+
+    function renderizarPaginas() {
+        const container = document.getElementById('reader-pages');
+        container.innerHTML = '';
+
+        if (!pagesData || !pagesData.chapter) {
+            container.innerHTML = '<p style="color: white; text-align: center; padding: 50px;">Erro ao carregar páginas</p>';
+            return;
+        }
+
+        const baseUrl = pagesData.baseUrl;
+        const hash = pagesData.chapter.hash;
+        const files = pagesData.chapter.data;
+
+        if (!files || files.length === 0) {
+            container.innerHTML = '<p style="color: white; text-align: center; padding: 50px;">Nenhuma página encontrada</p>';
+            return;
+        }
+
+        files.forEach((file, index) => {
+            const img = document.createElement('img');
+            img.src = `${baseUrl}/data/${hash}/${file}`;
+            img.className = 'reader-page-img';
+            img.loading = index < 3 ? 'eager' : 'lazy'; // Carrega as 3 primeiras imediatamente
+            img.alt = `Página ${index + 1} de ${files.length}`;
+            img.onerror = () => {
+                console.error(`Erro ao carregar página ${index + 1}`);
+                img.src = 'https://via.placeholder.com/800x1200/1a1a1a/ffffff?text=Erro+ao+carregar+página+' + (index + 1);
+            };
+            container.appendChild(img);
+        });
+    }
+
+    async function configurarNavegacao() {
+        try {
+            // Buscar capítulos com limite de 500 para cobrir a maioria dos mangás
+            const response = await fetch(`/api/mangadex/manga/${currentMangaId}/capitulos?limit=500`);
+            if (!response.ok) {
+                console.error('Erro ao carregar lista de capítulos');
+                return;
+            }
+            
+            const data = await response.json();
+            
+            // Filtrar capítulos que possuem número definido
+            allChapters = data.data.filter(c => c.attributes.chapter !== null && c.attributes.chapter !== undefined);
+            
+            if (allChapters.length === 0) {
+                console.warn('Nenhum capítulo encontrado');
+                return;
+            }
+            
+            // Ordenar capítulos numericamente (Crescente: 1, 2, 3...)
+            allChapters.sort((a, b) => {
+                const numA = parseFloat(a.attributes.chapter);
+                const numB = parseFloat(b.attributes.chapter);
+                return numA - numB;
+            });
+            
+            // Encontrar o índice do capítulo atual na lista ordenada
+            const currentIndex = allChapters.findIndex(c => c.id === chapterId);
+            
+            const btnPrev = document.getElementById('btn-prev-chapter');
+            const btnNext = document.getElementById('btn-next-chapter');
+
+            // Configurar botão ANTERIOR (Capítulo com índice menor)
+            if (currentIndex > 0) {
+                const prevChapter = allChapters[currentIndex - 1];
+                btnPrev.disabled = false;
+                btnPrev.style.opacity = '1';
+                btnPrev.onclick = () => {
+                    window.location.href = `/leitor/${prevChapter.id}`;
+                };
+            } else {
+                btnPrev.disabled = true;
+                btnPrev.style.opacity = '0.4';
+                btnPrev.onclick = null;
+            }
+
+            // Configurar botão PRÓXIMO (Capítulo com índice maior)
+            if (currentIndex !== -1 && currentIndex < allChapters.length - 1) {
+                const nextChapter = allChapters[currentIndex + 1];
+                btnNext.disabled = false;
+                btnNext.style.opacity = '1';
+                btnNext.onclick = () => {
+                    window.location.href = `/leitor/${nextChapter.id}`;
+                };
+            } else {
+                btnNext.disabled = true;
+                btnNext.style.opacity = '0.4';
+                btnNext.onclick = null;
+            }
+        } catch (error) {
+            console.error('Erro ao configurar navegação:', error);
+        }
+    }
+
+    // Evento de download
+    document.getElementById('btn-download').addEventListener('click', () => {
+        alert('💡 Dica de Download:\n\n1. Clique com botão direito em cada imagem\n2. Selecione "Salvar imagem como..."\n3. Escolha a pasta de destino\n\nOu use extensões de download em lote do seu navegador.');
+    });
+
+    // Atalhos de teclado
+    document.addEventListener('keydown', (e) => {
+        // Seta esquerda - capítulo anterior
+        if (e.key === 'ArrowLeft') {
+            const btnPrev = document.getElementById('btn-prev-chapter');
+            if (!btnPrev.disabled) btnPrev.click();
+        }
+        // Seta direita - próximo capítulo
+        if (e.key === 'ArrowRight') {
+            const btnNext = document.getElementById('btn-next-chapter');
+            if (!btnNext.disabled) btnNext.click();
+        }
+        // Home - voltar ao topo
+        if (e.key === 'Home') {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+    });
+
+    // Iniciar carregamento
+    carregarCapitulo();
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}MangaDex PT - Início{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1>Bem-vindo ao <span class="highlight">MangaDex PT</span></h1>
+        <p>Descubra e leia seus mangás favoritos com uma interface elegante e responsiva</p>
+        <div class="hero-buttons">
+            <a href="/categorias" class="btn btn-primary">Explorar Categorias</a>
+            <a href="/buscar" class="btn btn-secondary">Buscar Mangá</a>
+        </div>
+    </div>
+</section>
+
+<section class="popular-section">
+    <div class="container">
+        <h2>Mangás Populares</h2>
+        <div id="popular-mangas" class="manga-grid">
+            <div class="loading">Carregando...</div>
+        </div>
+        <div class="pagination">
+            <button id="prev-popular" class="btn-pagination">← Anterior</button>
+            <span id="page-popular">Página 1</span>
+            <button id="next-popular" class="btn-pagination">Próximo →</button>
+        </div>
+    </div>
+</section>
+
+<section class="trending-section">
+    <div class="container">
+        <h2>Em Alta</h2>
+        <div id="trending-mangas" class="manga-grid">
+            <div class="loading">Carregando...</div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPopularPage = 0;
+    const LIMIT = 20;
+    
+    async function carregarPopulares() {
+        try {
+            const response = await fetch(`/api/mangadex/populares?limit=${LIMIT}&offset=${currentPopularPage * LIMIT}`);
+            const data = await response.json();
+            
+            const container = document.getElementById('popular-mangas');
+            container.innerHTML = '';
+            
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(manga => {
+                    const card = criarMangaCard(manga);
+                    container.appendChild(card);
+                });
+            } else {
+                container.innerHTML = '<p>Nenhum mangá encontrado</p>';
+            }
+            
+            document.getElementById('page-popular').textContent = `Página ${currentPopularPage + 1}`;
+        } catch (error) {
+            console.error('Erro ao carregar mangás populares:', error);
+            document.getElementById('popular-mangas').innerHTML = '<p>Erro ao carregar mangás</p>';
+        }
+    }
+    
+    function criarMangaCard(manga) {
+        const div = document.createElement('div');
+        div.className = 'manga-card';
+        
+        const coverUrl = obterCapaManga(manga);
+        const titulo = manga.attributes?.title?.en || 
+                       manga.attributes?.title?.['ja-ro'] || 
+                       manga.attributes?.title?.['pt-br'] || 
+                       manga.attributes?.title?.['pt'] || 
+                       Object.values(manga.attributes?.title || {})[0] || 
+                       'Sem título';
+        const status = manga.attributes?.status || 'desconhecido';
+        
+        div.innerHTML = `
+            <a href="/manga/${manga.id}" class="manga-link">
+                <img src="${coverUrl}" alt="${titulo}" class="manga-cover" onerror="this.src='/static/images/placeholder.png'">
+                <div class="manga-info">
+                    <h3 class="manga-title">${titulo}</h3>
+                    <p class="manga-status">${status}</p>
+                </div>
+            </a>
+        `;
+        
+        return div;
+    }
+    
+    function obterCapaManga(manga) {
+        if (manga.relationships) {
+            const coverArt = manga.relationships.find(r => r.type === 'cover_art');
+            if (coverArt) {
+                return `https://uploads.mangadex.org/covers/${manga.id}/${coverArt.attributes.fileName}`;
+            }
+        }
+        return '/static/images/placeholder.png';
+    }
+    
+    document.getElementById('prev-popular').addEventListener('click', () => {
+        if (currentPopularPage > 0) {
+            currentPopularPage--;
+            carregarPopulares();
+        }
+    });
+    
+    document.getElementById('next-popular').addEventListener('click', () => {
+        currentPopularPage++;
+        carregarPopulares();
+    });
+    
+    // Carregar ao inicializar
+    carregarPopulares();
+</script>
+{% endblock %}

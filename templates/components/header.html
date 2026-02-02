@@ -1,0 +1,76 @@
+<header class="header">
+    <div class="container">
+        <div class="header-content">
+            <!-- Logo -->
+            <div class="logo">
+                <a href="/">
+                    <span class="logo-icon">📚</span>
+                    <span class="logo-text">MangaDex PT</span>
+                </a>
+            </div>
+            
+            <!-- Navegação Desktop -->
+            <nav class="nav-desktop">
+                <a href="/" class="nav-link">Início</a>
+                <a href="/categorias" class="nav-link">Categorias</a>
+                <a href="/buscar" class="nav-link">Buscar</a>
+                <a href="/adulto" class="nav-link">Adulto</a>
+                <a href="/admin" class="nav-link admin-link" id="admin-btn-desktop" style="display: none;">Admin</a>
+            </nav>
+            
+            <!-- Busca -->
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    placeholder="Buscar mangá..." 
+                    class="search-input"
+                >
+                <button class="search-btn" onclick="buscarManga()">🔍</button>
+            </div>
+            
+            <!-- Menu Mobile -->
+            <button class="menu-toggle" id="menu-toggle">☰</button>
+        </div>
+        
+        <!-- Menu Mobile -->
+        <nav class="nav-mobile" id="nav-mobile">
+            <a href="/" class="nav-link">Início</a>
+            <a href="/categorias" class="nav-link">Categorias</a>
+            <a href="/buscar" class="nav-link">Buscar</a>
+            <a href="/adulto" class="nav-link">Adulto</a>
+            <a href="/admin" class="nav-link admin-link" id="admin-btn-mobile" style="display: none;">Admin</a>
+        </nav>
+    </div>
+</header>
+
+<!-- Anúncio no topo (Header Ad) -->
+<div id="header-ad" class="ad-banner ad-header"></div>
+
+<script>
+    // Toggle menu mobile
+    document.getElementById('menu-toggle').addEventListener('click', function() {
+        const navMobile = document.getElementById('nav-mobile');
+        navMobile.classList.toggle('active');
+    });
+    
+    // Fechar menu ao clicar em um link
+    document.querySelectorAll('.nav-mobile .nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            document.getElementById('nav-mobile').classList.remove('active');
+        });
+    });
+
+    // Lógica para mostrar botão admin
+    function verificarAdmin() {
+        // Simulando verificação de admin (pode ser via cookie, JWT ou chamada de API)
+        // Para este exemplo, vamos verificar se existe um item 'user_role' no localStorage
+        const userRole = localStorage.getItem('user_role');
+        if (userRole === 'admin') {
+            document.getElementById('admin-btn-desktop').style.display = 'block';
+            document.getElementById('admin-btn-mobile').style.display = 'block';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', verificarAdmin);
+</script>
